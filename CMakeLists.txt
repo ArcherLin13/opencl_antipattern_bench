@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.16)
+project(opencl_antipattern_bench LANGUAGES CXX)
+
+set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(OPENCL_HEADERS_DIR "${ROOT}/third_party/OpenCL-Headers" CACHE PATH "Khronos OpenCL-Headers")
+
+if(NOT EXISTS "${OPENCL_HEADERS_DIR}/CL/cl.h")
+    message(FATAL_ERROR "OpenCL headers missing at ${OPENCL_HEADERS_DIR}/CL/cl.h")
+endif()
+
+add_executable(ocl_antipattern_bench device_test/ocl_antipattern_bench.cpp)
+target_compile_features(ocl_antipattern_bench PRIVATE cxx_std_17)
+target_include_directories(ocl_antipattern_bench PRIVATE "${OPENCL_HEADERS_DIR}" "${ROOT}/device_test")
+target_compile_definitions(ocl_antipattern_bench PRIVATE CL_TARGET_OPENCL_VERSION=120)
+
+if(OHOS OR CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+    target_sources(ocl_antipattern_bench PRIVATE device_test/opencl_dynload.cpp)
+    target_compile_definitions(ocl_antipattern_bench PRIVATE OCR_OPENCL_DLOPEN=1)
+    target_link_libraries(ocl_antipattern_bench PRIVATE dl)
+    message(STATUS "ocl_antipattern_bench: OHOS dynamic OpenCL (dlopen)")
+elseif(DEFINED OPENCL_LIBRARY AND OPENCL_LIBRARY)
+    target_link_libraries(ocl_antipattern_bench PRIVATE "${OPENCL_LIBRARY}")
+else()
+    target_link_libraries(ocl_antipattern_bench PRIVATE OpenCL)
+endif()
